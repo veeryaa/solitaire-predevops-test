@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-coding-solitaire-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-coding-solitaire
+  template:
+    metadata:
+      labels:
+        app: simple-coding-solitaire
+    spec:
+      containers:
+      - name: simple-coding-solitaire
+        image: veeryaa/simple-coding-solitaire:1
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - configMapRef:
+            name: simple-coding-solitaire-configmap
+        - secretRef:
+            name: simple-coding-solitaire-secret
