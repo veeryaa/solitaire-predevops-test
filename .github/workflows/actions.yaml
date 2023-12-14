@@ -1,0 +1,35 @@
+name: Solitaire Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Input tag yang ingin dibuild'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    env:
+      REMOTE_IMAGE_NAME: veeryaa/simple-coding-solitaire
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: build
+      run: |
+        docker build -t simple-coding-solitaire:${{ github.event.inputs.tag }} .
+        docker tag simple-coding-soliatire:${{ github.event.inputs.tag }} $REMOTE_IMAGE_NAME:${{ github.event.inputs.tag }}
+        docker tag simple-coding-soliatire:${{ github.event.inputs.tag }} $REMOTE_IMAGE_NAME:latest
+
+    # - name: push
+    #   run: |
+    #     echo ${{ secrets.REGISTRY_PASSWORD }} | docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin ${{ secrets.CONTAINER_REGISTRY }}
+    #     docker push ${{ secrets.CONTAINER_REGISTRY }}/$REMOTE_IMAGE_NAME:latest
+
+    # - name: Deploy to Kubernetes
+    #   run: |
+    #     kubectl apply -f kubernetes/deployment.yaml
+    #     kubectl apply -f kubernetes/service.yaml
