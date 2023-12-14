@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: simple-coding-solitaire
-        image: veeryaa/simple-coding-solitaire:1
+        image: veeryaa/simple-coding-solitaire:tagname
         ports:
         - containerPort: 5000
         envFrom:

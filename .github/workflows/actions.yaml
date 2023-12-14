@@ -1,0 +1,64 @@
+name: simple-coding-deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Input tag yang ingin dibuild'
+        required: true
+
+env:
+  REMOTE_IMAGE_NAME: veeryaa/simple-coding-solitaire
+
+jobs:
+  tag_verification:
+    runs-on: self-hosted
+
+    steps: 
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: does-tag-exist
+      run: |
+        echo "Tagging ..."
+        TAG_NAME=${{ github.event.inputs.tag }}
+        echo $TAG_NAME
+        pwd
+        git ls-remote
+  
+  build:
+    runs-on: self-hosted
+    needs: tag_verification
+    if: needs.tag_verification.result == 'success'
+
+    steps:
+    - name: docker-build
+      run: |
+        echo "Building..."
+        docker build -t simple-coding-solitaire:${{ github.event.inputs.tag }} .
+        docker tag simple-coding-solitaire:${{ github.event.inputs.tag }} $REMOTE_IMAGE_NAME:${{ github.event.inputs.tag }}
+        echo "Remote tagging..."
+        docker tag simple-coding-solitaire:${{ github.event.inputs.tag }} $REMOTE_IMAGE_NAME:latest
+
+  push:
+    runs-on: self-hosted
+    needs: build
+    if: needs.build.result == 'success'
+
+    steps:
+    - name: push
+      run: |
+        echo ${{ secrets.REGISTRY_PASSWORD }} | docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin ${{ secrets.CONTAINER_REGISTRY }}
+        docker push $REMOTE_IMAGE_NAME:latest
+        docker push $REMOTE_IMAGE_NAME:test-ci
+
+  deploy:
+    runs-on: self-hosted
+    needs: push
+    if: needs.push.result == 'success'
+
+    steps:
+    - name: Deploy to Kubernetes
+      run: |
+        sed -i "s|veeryaa/simple-coding-solitaire:.*|${REMOTE_IMAGE_NAME}:${{ github.event.inputs.tag }}|" deployment/deployment.yaml
+        kubectl apply -f deployment/deployment.yaml
